@@ -5,769 +5,581 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>猫砂淘淘乐</title>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
-html, body {
-  width:100%; height:100%;
-  background:#1a1008;
-  display:flex; align-items:center; justify-content:center;
-  overflow:hidden;
-  touch-action:none;
-  user-select:none;
-  font-family:'PingFang SC','Microsoft YaHei',sans-serif;
-}
-#wrap {
-  position:relative;
-  width:min(420px, 100vw);
-  height:min(780px, 100dvh);
-  overflow:hidden;
-  background:#c8a050;
-}
-
-/* canvas stack - all absolute, same size */
-#layer-sand    { position:absolute; inset:0; z-index:1; }
-#layer-turds   { position:absolute; inset:0; z-index:2; }
-#layer-mask    { position:absolute; inset:0; z-index:3; }
-#layer-fx      { position:absolute; inset:0; z-index:4; pointer-events:none; }
-
-/* UI on top */
-#ui {
-  position:absolute; inset:0; z-index:10;
-  pointer-events:none;
-  display:flex; flex-direction:column;
-  justify-content:space-between;
-}
-
-/* top bar */
-#topbar {
-  pointer-events:all;
-  display:flex; align-items:center; justify-content:space-between;
-  padding:10px 14px 8px;
-  background:linear-gradient(to bottom, rgba(0,0,0,.55) 60%, transparent);
-}
-#score-wrap { color:#f5c842; }
-#score-label { font-size:9px; letter-spacing:3px; opacity:.6; }
-#score-num { font-size:26px; font-weight:900; line-height:1.1; }
-
-#sift-btn {
-  pointer-events:all;
-  width:72px; height:72px;
-  border-radius:50%;
-  background:linear-gradient(145deg,#f5c842,#e0a020);
-  border:none;
-  font-size:28px;
-  box-shadow:0 4px 20px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.3);
-  cursor:pointer;
-  active-scale:.92;
-  transition:transform .1s, box-shadow .1s;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:0;
-}
-#sift-btn:active { transform:scale(.92); box-shadow:0 2px 8px rgba(0,0,0,.4); }
-#sift-btn .btn-icon { font-size:28px; line-height:1; }
-#sift-btn .btn-label { font-size:9px; font-weight:700; color:#7a4000; letter-spacing:1px; }
-
-#combo-wrap {
-  min-width:70px; text-align:right;
-  font-size:13px; font-weight:800; color:#ff8844;
-}
-
-/* bottom tray */
-#tray {
-  pointer-events:none;
-  padding:8px 10px 16px;
-  background:linear-gradient(to top, rgba(0,0,0,.9) 60%, transparent);
-}
-#tray-label {
-  font-size:9px; color:rgba(255,255,255,.3);
-  letter-spacing:3px; text-align:center; margin-bottom:6px;
-}
-#slots {
-  display:flex; gap:5px; justify-content:center;
-}
-.slot {
-  width:46px; height:54px;
-  border-radius:10px;
-  background:rgba(255,255,255,.06);
-  border:1.5px solid rgba(255,255,255,.12);
-  display:flex; align-items:center; justify-content:center;
-  font-size:26px; flex-shrink:0;
-}
-.slot.has-item { animation:slotpop .22s cubic-bezier(.17,.67,.35,1.5); }
-@keyframes slotpop{0%{transform:scale(0) rotate(-10deg)}100%{transform:scale(1)}}
-.slot.match-flash { animation:matchflash .4s ease; }
-@keyframes matchflash{0%{background:rgba(245,200,66,.7);transform:scale(1.18)}100%{transform:scale(1)}}
-
-/* overlays */
-#burst {
-  display:none; position:absolute; z-index:20; pointer-events:none;
-  font-size:28px; font-weight:900; color:#f5c842;
-  text-shadow:0 0 24px rgba(245,200,66,.9);
-  text-align:center; white-space:nowrap;
-}
-@keyframes burstpop{
-  0%{transform:translate(-50%,-50%) scale(0);opacity:0}
-  45%{transform:translate(-50%,-50%) scale(1.25);opacity:1}
-  100%{transform:translate(-50%,-50%) scale(1);opacity:0}
-}
-.ft {
-  position:absolute; pointer-events:none; z-index:20;
-  font-weight:900; animation:ftup .75s ease forwards;
-}
-@keyframes ftup{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-60px);opacity:0}}
-
-#gameover {
-  display:none; position:absolute; inset:0; z-index:50;
-  background:rgba(0,0,0,.85); backdrop-filter:blur(6px);
-  flex-direction:column; align-items:center; justify-content:center; gap:14px;
-}
-#gameover.show { display:flex; }
-#gameover h2 { font-size:34px; color:#f5c842; }
-#gameover p  { font-size:15px; color:#c8a060; }
-#restart-btn {
-  padding:13px 36px; background:#f5c842; color:#1a0e00;
-  border:none; border-radius:50px; font-size:17px; font-weight:800; cursor:pointer;
-}
-
-/* hint toast */
-#hint-toast {
-  position:absolute; bottom:100px; left:50%; transform:translateX(-50%);
-  background:rgba(0,0,0,.6); color:#fff; border-radius:20px;
-  padding:6px 16px; font-size:12px; pointer-events:none;
-  z-index:15; opacity:0; transition:opacity .3s;
-  white-space:nowrap;
-}
-#hint-toast.show { opacity:1; }
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { width:100%; height:100%; background:#0d0a06; display:flex; align-items:center; justify-content:center; overflow:hidden; touch-action:none; user-select:none; font-family:'PingFang SC','Microsoft YaHei',sans-serif; }
+#wrap { position:relative; width:min(420px,100vw); height:min(780px,100dvh); overflow:hidden; background:#c09040; }
+#layer-turds,#layer-mask,#layer-fx { position:absolute; inset:0; width:100%; height:100%; }
+#layer-turds{z-index:1;} #layer-mask{z-index:2;} #layer-fx{z-index:3;pointer-events:none;}
+#topbar { position:absolute; top:0; left:0; right:0; z-index:10; display:flex; align-items:center; justify-content:space-between; padding:10px 14px 8px; background:linear-gradient(to bottom,rgba(0,0,0,.7) 60%,transparent); pointer-events:none; }
+#level-info { color:#f5c842; min-width:48px; }
+#level-label { font-size:9px; letter-spacing:3px; opacity:.55; }
+#level-num { font-size:22px; font-weight:900; line-height:1.1; }
+#mid-hud { flex:1; margin:0 10px; display:flex; flex-direction:column; align-items:center; gap:3px; }
+#progress-text { font-size:10px; color:rgba(255,255,255,.65); letter-spacing:1px; }
+#progress-bar-bg { width:100%; height:7px; background:rgba(0,0,0,.4); border-radius:4px; overflow:hidden; }
+#progress-bar-fill { height:100%; width:0%; background:linear-gradient(to right,#f5c842,#ff9900); border-radius:4px; transition:width .5s ease; }
+#right-hud { display:flex; flex-direction:column; align-items:flex-end; min-width:60px; }
+#score-label,#timer-label { font-size:9px; color:rgba(255,255,255,.45); letter-spacing:2px; }
+#score-num { font-size:22px; font-weight:900; color:#f5c842; line-height:1.1; }
+#timer-num { font-size:22px; font-weight:900; color:#fff; line-height:1.1; }
+#timer-num.danger { color:#ff4444; animation:dangerpulse .5s ease-in-out infinite; }
+@keyframes dangerpulse{0%,100%{opacity:1}50%{opacity:.5}}
+#sift-btn { position:absolute; z-index:10; bottom:96px; right:14px; width:66px; height:66px; border-radius:50%; background:linear-gradient(145deg,#f5c842,#d4900a); border:none; box-shadow:0 4px 18px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.3); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:transform .08s,box-shadow .08s; }
+#sift-btn:active{transform:scale(.9);}
+#sift-btn .si{font-size:24px;line-height:1;} #sift-btn .sl{font-size:9px;font-weight:700;color:#7a4000;letter-spacing:1px;margin-top:1px;}
+#tray { position:absolute; bottom:0; left:0; right:0; z-index:10; padding:5px 8px 12px; background:linear-gradient(to top,rgba(0,0,0,.93) 65%,transparent); pointer-events:none; }
+#tray-label { font-size:9px; color:rgba(255,255,255,.22); letter-spacing:3px; text-align:center; margin-bottom:4px; }
+#slots { display:flex; gap:4px; justify-content:center; }
+.slot { width:48px; height:56px; border-radius:11px; background:rgba(255,255,255,.05); border:1.5px solid rgba(255,255,255,.1); display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0; }
+.slot.pop{animation:slotpop .22s cubic-bezier(.17,.67,.35,1.6);}
+.slot.flash{animation:slotflash .38s ease;}
+@keyframes slotpop{0%{transform:scale(0) rotate(-12deg)}100%{transform:scale(1)}}
+@keyframes slotflash{0%{background:rgba(245,200,66,.65);transform:scale(1.15)}100%{transform:scale(1)}}
+#burst { display:none; position:absolute; z-index:20; pointer-events:none; font-size:24px; font-weight:900; color:#f5c842; text-shadow:0 0 24px rgba(245,200,66,.9); text-align:center; white-space:nowrap; left:50%; top:42%; transform:translate(-50%,-50%); }
+@keyframes burstpop{0%{transform:translate(-50%,-50%) scale(0);opacity:0}45%{transform:translate(-50%,-50%) scale(1.2);opacity:1}100%{transform:translate(-50%,-50%) scale(.95);opacity:0}}
+.ft { position:absolute; pointer-events:none; z-index:20; font-weight:900; font-size:14px; animation:ftup .75s ease forwards; transform:translateX(-50%); }
+@keyframes ftup{0%{transform:translateX(-50%) translateY(0);opacity:1}100%{transform:translateX(-50%) translateY(-55px);opacity:0}}
+#rim { position:absolute; inset:0; z-index:9; pointer-events:none; border:4px solid transparent; }
+@keyframes rimflash{0%{border-color:rgba(245,200,66,.9);box-shadow:inset 0 0 40px rgba(245,200,66,.2)}100%{border-color:transparent}}
+#toast { position:absolute; z-index:30; pointer-events:none; left:50%; bottom:108px; transform:translateX(-50%); background:rgba(0,0,0,.7); color:#fff; border-radius:20px; padding:6px 18px; font-size:12px; white-space:nowrap; opacity:0; transition:opacity .25s; }
+#toast.show{opacity:1;}
+.screen { display:none; position:absolute; inset:0; z-index:50; flex-direction:column; align-items:center; justify-content:flex-start; background:rgba(8,5,1,.95); backdrop-filter:blur(10px); overflow-y:auto; padding:20px 20px 30px; gap:10px; }
+.screen.show{display:flex;}
+.screen-center { justify-content:center; }
+.btn { padding:12px 32px; background:linear-gradient(135deg,#f5c842,#d4900a); color:#1a0e00; border:none; border-radius:50px; font-size:15px; font-weight:800; cursor:pointer; box-shadow:0 4px 16px rgba(245,200,66,.3); }
+.btn-ghost { background:rgba(255,255,255,.08); color:#f5c842; border:1px solid rgba(245,200,66,.25); box-shadow:none; }
+.sh2 { font-size:28px; color:#f5c842; font-weight:900; text-align:center; margin-top:10px; }
+.sp  { font-size:12px; color:#c8a060; text-align:center; }
+.rules-box { width:100%; background:rgba(255,255,255,.05); border-radius:14px; padding:14px 18px; }
+.rules-box p { font-size:12px; color:rgba(255,255,255,.72); margin-bottom:5px; }
+.rules-box p:last-child{margin-bottom:0;}
+.cats-box { width:100%; background:rgba(245,200,66,.07); border-radius:14px; padding:10px 14px; border:1px solid rgba(245,200,66,.15); }
+.cats-box-title { font-size:10px; color:#f5c842; letter-spacing:2px; margin-bottom:6px; }
+.cats-chips { display:flex; flex-wrap:wrap; gap:6px; }
+.cat-chip { font-size:11px; color:rgba(255,255,255,.7); background:rgba(255,255,255,.07); border-radius:8px; padding:3px 8px; }
+.settle-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,.06); width:100%; opacity:0; transform:translateX(-20px); transition:opacity .35s,transform .35s; }
+.settle-row.show{opacity:1;transform:translateX(0);}
+.srl { display:flex; align-items:center; gap:10px; }
+.sre { font-size:28px; }
+.srn { font-size:13px; color:#fff; font-weight:600; }
+.srd { font-size:11px; color:rgba(255,255,255,.45); margin-top:1px; }
+.src { font-size:16px; font-weight:800; color:#f5c842; }
+.settle-total { width:100%; display:flex; align-items:center; justify-content:space-between; background:rgba(245,200,66,.08); border-radius:12px; padding:14px 16px; margin-top:4px; }
+.settle-total-label { font-size:14px; color:rgba(255,255,255,.7); font-weight:600; }
+.settle-total-num { font-size:26px; font-weight:900; color:#f5c842; }
+.row-btns { display:flex; gap:10px; width:100%; margin-top:4px; }
+.row-btns .btn { flex:1; text-align:center; }
+.gacha-eggs { display:flex; gap:12px; width:100%; }
+.gegg { flex:1; border-radius:18px; padding:16px 10px; display:flex; flex-direction:column; align-items:center; gap:7px; cursor:pointer; transition:transform .1s; border:2px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); }
+.gegg:active{transform:scale(.95);}
+.gegg.premium{border-color:rgba(245,200,66,.45);background:rgba(245,200,66,.07);}
+.gegg-icon{font-size:46px;line-height:1;}
+.gegg-name{font-size:13px;font-weight:700;color:#fff;}
+.gegg-price{font-size:12px;color:#f5c842;font-weight:600;}
+.gegg-rates{font-size:10px;color:rgba(255,255,255,.38);text-align:center;line-height:1.6;}
+.gacha-result-box { width:100%; min-height:90px; display:flex; align-items:center; justify-content:center; }
+.grinner { display:none; text-align:center; animation:resultpop .5s cubic-bezier(.17,.67,.35,1.5); }
+@keyframes resultpop{0%{transform:scale(0) rotate(-10deg);opacity:0}100%{transform:scale(1);opacity:1}}
+.gr-emoji{font-size:60px;line-height:1;}
+.gr-name{font-size:17px;font-weight:800;color:#fff;margin-top:4px;}
+.gr-rarity{font-size:11px;letter-spacing:2px;margin-top:2px;}
+.gr-buff{font-size:12px;color:rgba(255,255,255,.55);margin-top:3px;}
+.rn{color:rgba(255,255,255,.45);} .rr{color:#60c0ff;} .rs{color:#f5c842;}
+.owned-section { width:100%; }
+.owned-title { font-size:10px; color:rgba(255,255,255,.3); letter-spacing:3px; margin-bottom:8px; }
+.owned-list { display:flex; flex-wrap:wrap; gap:6px; }
+.ocat { font-size:11px; color:rgba(255,255,255,.7); background:rgba(255,255,255,.06); border-radius:8px; padding:4px 8px; }
+.ocat .st{color:#f5c842;font-size:9px;}
+#gacha-coins-bar { font-size:13px; color:#c8a060; text-align:center; }
+#gacha-coins-bar span{color:#f5c842;font-weight:800;}
+#gacha-anim { display:none; position:absolute; inset:0; z-index:60; background:rgba(0,0,0,.88); flex-direction:column; align-items:center; justify-content:center; gap:16px; }
+#gacha-anim.show{display:flex;}
+#gball{font-size:80px;animation:ballspin .8s ease-in-out infinite;}
+@keyframes ballspin{0%{transform:rotate(-15deg) scale(1)}50%{transform:rotate(15deg) scale(1.1)}100%{transform:rotate(-15deg) scale(1)}}
+#gtext{font-size:15px;color:#f5c842;letter-spacing:3px;animation:blink .6s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:.4}50%{opacity:1}}
 </style>
 </head>
 <body>
 <div id="wrap">
-  <!-- canvas layers -->
-  <canvas id="layer-sand"></canvas>
   <canvas id="layer-turds"></canvas>
   <canvas id="layer-mask"></canvas>
   <canvas id="layer-fx"></canvas>
+  <div id="topbar">
+    <div id="level-info"><div id="level-label">STAGE</div><div id="level-num">1</div></div>
+    <div id="mid-hud">
+      <div id="progress-text">0 / 0 组</div>
+      <div id="progress-bar-bg"><div id="progress-bar-fill"></div></div>
+    </div>
+    <div id="right-hud">
+      <div id="score-label">SCORE</div><div id="score-num">0</div>
+      <div id="timer-label" style="display:none">TIME</div><div id="timer-num" style="display:none">0</div>
+    </div>
+  </div>
+  <button id="sift-btn"><span class="si">🐾</span><span class="sl">铲一铲</span></button>
+  <div id="tray"><div id="tray-label">收集槽</div><div id="slots"></div></div>
+  <div id="rim"></div><div id="burst"></div><div id="toast"></div>
 
-  <div id="ui">
-    <div id="topbar">
-      <div id="score-wrap">
-        <div id="score-label">SCORE</div>
-        <div id="score-num">0</div>
+  <!-- INTRO -->
+  <div class="screen screen-center" id="s-intro">
+    <div class="sh2" id="i-title">第1关</div>
+    <div class="sp" id="i-badge"></div>
+    <div class="rules-box" id="i-rules"></div>
+    <div class="cats-box" id="i-cats" style="display:none">
+      <div class="cats-box-title">✨ 已激活BUFF</div>
+      <div class="cats-chips" id="i-cats-list"></div>
+    </div>
+    <button class="btn" onclick="startLevel()">开始铲屎！🐾</button>
+  </div>
+
+  <!-- SETTLE -->
+  <div class="screen" id="s-settle">
+    <div class="sh2">✨ 关卡完成！</div>
+    <div class="sp" id="st-sub"></div>
+    <div id="st-rows"></div>
+    <div id="st-buff" style="font-size:11px;color:#f5c842;background:rgba(245,200,66,.1);border-radius:8px;padding:6px 12px;text-align:center;display:none;width:100%"></div>
+    <div class="settle-total"><div class="settle-total-label">💰 合计金币</div><div class="settle-total-num" id="st-total">0</div></div>
+    <div class="row-btns">
+      <button class="btn" onclick="showGacha()">去扭蛋 🎰</button>
+      <button class="btn btn-ghost" onclick="goNextLevel()">下一关 →</button>
+    </div>
+  </div>
+
+  <!-- GACHA -->
+  <div class="screen" id="s-gacha">
+    <div class="sh2" style="margin-top:0">🎰 扭蛋机</div>
+    <div id="gacha-coins-bar">当前金币：<span id="gc-num">0</span></div>
+    <div class="gacha-eggs">
+      <div class="gegg" onclick="doGacha(false)">
+        <div class="gegg-icon">🥚</div>
+        <div class="gegg-name">普通扭蛋</div>
+        <div class="gegg-price">100 💰</div>
+        <div class="gegg-rates">普通 60%<br>稀有 35%<br>超稀有 5%</div>
       </div>
-      <button id="sift-btn" onclick="sift()">
-        <span class="btn-icon">🐾</span>
-        <span class="btn-label">铲一铲</span>
-      </button>
-      <div id="combo-wrap"></div>
+      <div class="gegg premium" onclick="doGacha(true)">
+        <div class="gegg-icon">🎁</div>
+        <div class="gegg-name">豪华扭蛋</div>
+        <div class="gegg-price">1000 💰</div>
+        <div class="gegg-rates">普通 20%<br>稀有 55%<br>超稀有 25%</div>
+      </div>
     </div>
-
-    <div id="tray">
-      <div id="tray-label">收集槽 · 7 SLOTS</div>
-      <div id="slots"></div>
+    <div class="gacha-result-box"><div class="grinner" id="gr-inner">
+      <div class="gr-emoji" id="gr-emoji"></div>
+      <div class="gr-name" id="gr-name"></div>
+      <div class="gr-rarity" id="gr-rarity"></div>
+      <div class="gr-buff" id="gr-buff"></div>
+    </div></div>
+    <div class="owned-section">
+      <div class="owned-title">已拥有的猫</div>
+      <div class="owned-list" id="owned-list"></div>
+    </div>
+    <div class="row-btns" style="margin-top:auto">
+      <button class="btn btn-ghost" onclick="goNextLevel()">开始下一关 →</button>
     </div>
   </div>
 
-  <div id="burst"></div>
-  <div id="hint-toast"></div>
-
-  <div id="gameover">
-    <h2>💩 槽位已满！</h2>
-    <p id="go-score">最终得分: 0</p>
-    <button id="restart-btn" onclick="initGame()">再来一局 🔄</button>
+  <!-- GAMEOVER -->
+  <div class="screen screen-center" id="s-gameover">
+    <div class="sh2" style="color:#ff6644">💀 挑战失败！</div>
+    <div class="sp" id="go-info"></div>
+    <div class="row-btns" style="margin-top:14px">
+      <button class="btn" onclick="showIntro(currentLevel)">重试</button>
+      <button class="btn btn-ghost" onclick="showIntro(1)">第一关</button>
+    </div>
   </div>
+
+  <!-- GACHA ANIM -->
+  <div id="gacha-anim"><div id="gball">🥚</div><div id="gtext">扭蛋中...</div></div>
 </div>
-
 <script>
-// ── TYPES ─────────────────────────────────────────────────────────────────────
-const TYPES = [
-  { emoji:'💩', color:'#8B4513', dark:'#5a2a08' },
-  { emoji:'🟤', color:'#A0522D', dark:'#6b3018' },
-  { emoji:'🫘', color:'#6B3A2A', dark:'#3d1a10' },
-  { emoji:'⚫', color:'#2d2018', dark:'#0a0806' },
-  { emoji:'⭐', color:'#B8860B', dark:'#7a5500' },
+const TURDS=[
+  {id:0,emoji:'💩',name:'普通便',color:'#8B4513',dark:'#4a2008',price:10},
+  {id:1,emoji:'🌽',name:'玉米便',color:'#c8a020',dark:'#806000',price:15},
+  {id:2,emoji:'🟤',name:'圆球便',color:'#A0522D',dark:'#5a2810',price:25},
+  {id:3,emoji:'🫘',name:'豆豆便',color:'#6B3A2A',dark:'#351508',price:40},
+  {id:4,emoji:'⚫',name:'黑便',  color:'#2d2018',dark:'#0a0806',price:60},
+  {id:5,emoji:'🔴',name:'血便',  color:'#8B0000',dark:'#4a0000',price:80},
+  {id:6,emoji:'⭐',name:'稀有便',color:'#B8860B',dark:'#7a5500',price:100},
+  {id:7,emoji:'💎',name:'钻石便',color:'#4a90d9',dark:'#1a4a80',price:150},
+  {id:8,emoji:'☕',name:'咖啡豆屎',color:'#4a2800',dark:'#1a0800',price:300},
+  {id:9,emoji:'🥇',name:'元宝屎',color:'#d4a820',dark:'#8a6000',price:500},
+];
+const CATS=[
+  {id:0,emoji:'🐱',name:'橘猫',  rarity:'normal',buff:'普通便售价×1.5',  fn:b=>{b.pm[0]=1.5;}},
+  {id:1,emoji:'🐈', name:'狸花猫',rarity:'normal',buff:'每铲多露1坨',    fn:b=>{b.er+=1;}},
+  {id:2,emoji:'🤍',name:'白猫',  rarity:'normal',buff:'槽位扩展至7格',  fn:b=>{b.ms=7;}},
+  {id:3,emoji:'🐈‍⬛',name:'黑猫', rarity:'normal',buff:'限时+20秒',     fn:b=>{b.bt+=20;}},
+  {id:4,emoji:'😺',name:'布偶猫',rarity:'normal',buff:'圆球+豆豆便×1.5',fn:b=>{b.pm[2]=1.5;b.pm[3]=1.5;}},
+  {id:5,emoji:'🦁',name:'缅因猫',rarity:'rare',  buff:'黑便+稀有便×2',  fn:b=>{b.pm[4]=2;b.pm[6]=2;}},
+  {id:6,emoji:'👑',name:'金渐层',rarity:'rare',  buff:'结算金币×1.3',   fn:b=>{b.sm=1.3;}},
+  {id:7,emoji:'🌙',name:'俄蓝猫',rarity:'rare',  buff:'限时+30秒',      fn:b=>{b.bt+=30;}},
+  {id:8,emoji:'🦡',name:'麝香猫',rarity:'super', buff:'概率出☕咖啡豆屎',fn:b=>{b.ss.push(8);}},
+  {id:9,emoji:'🏆',name:'招财猫',rarity:'super', buff:'概率出🥇元宝屎', fn:b=>{b.ss.push(9);}},
+];
+const RL={normal:'普通',rare:'稀有',super:'超稀有'};
+const RC={normal:'rn',rare:'rr',super:'rs'};
+const STAGE_CFGS=[
+  {tc:3,ge:2,timed:false,ts:0},
+  {tc:5,ge:3,timed:true, ts:180},
+  {tc:7,ge:4,timed:true, ts:240},
+  {tc:8,ge:5,timed:true, ts:300},
+  {tc:8,ge:6,timed:true, ts:330},
 ];
 
-// ── CONFIG ────────────────────────────────────────────────────────────────────
-const N_TURDS   = 18;    // total turds in the sandbox
-const MAX_SLOTS = 7;
-const TRAY_H    = 82;    // px, must match CSS roughly
-const TOPBAR_H  = 80;
-const REVEAL_PER_SIFT = 3;   // how many turds get unburied per sift
-const BURY_THRESHOLD  = 0.35; // below this depth = can be tapped
+let W,H,ctxT,ctxM,ctxF;
+let turds=[],slots=[],particles=[],sandNoise=[];
+let currentLevel=1,stageCfg=null,totalGroups=0;
+let score=0,eliminated=0,timeLeft=0;
+let timerInterval=null,frameId=null,gameRunning=false;
+let siftShake=0,frameCount=0,motionEnabled=false,lastMotionT=0;
+const TH=66,BH=78;
+let playerCoins=0,ownedCats={};
+let B={};
 
-// ── STATE ─────────────────────────────────────────────────────────────────────
-let W, H;
-let cSand, ctxSand;
-let cTurds, ctxTurds;
-let cMask, ctxMask;
-let cFx, ctxFx;
-
-let turds = [];
-let slots = [];
-let score = 0, combo = 0;
-let gameOver = false;
-let particles = [];
-let sandNoise = [];
-let frameCount = 0;
-let siftAnim = 0;      // > 0 means sifting animation is playing
-let lastMotionSift = 0;
-
-const wrap     = document.getElementById('wrap');
-const scoreEl  = document.getElementById('score-num');
-const comboEl  = document.getElementById('combo-wrap');
-const slotsEl  = document.getElementById('slots');
-const burstEl  = document.getElementById('burst');
-const hintEl   = document.getElementById('hint-toast');
-
-// ── RESIZE ────────────────────────────────────────────────────────────────────
-function resize() {
-  W = wrap.clientWidth;
-  H = wrap.clientHeight;
-  for (const id of ['layer-sand','layer-turds','layer-mask','layer-fx']) {
-    const c = document.getElementById(id);
-    c.width = W; c.height = H;
-  }
+function resetB(){B={pm:{0:1,1:1,2:1,3:1,4:1,5:1,6:1,7:1,8:1,9:1},er:0,ms:6,bt:0,sm:1,ss:[]};}
+function applyB(){
+  resetB();
+  for(const[id,stars] of Object.entries(ownedCats))
+    for(let s=0;s<stars;s++) CATS[+id].fn(B);
 }
 
-function getCtxs() {
-  cSand  = document.getElementById('layer-sand');   ctxSand  = cSand.getContext('2d');
-  cTurds = document.getElementById('layer-turds');  ctxTurds = cTurds.getContext('2d');
-  cMask  = document.getElementById('layer-mask');   ctxMask  = cMask.getContext('2d');
-  cFx    = document.getElementById('layer-fx');     ctxFx    = cFx.getContext('2d');
+const wrap=document.getElementById('wrap');
+function ct(){return document.getElementById('layer-turds');}
+function cm(){return document.getElementById('layer-mask');}
+function cf(){return document.getElementById('layer-fx');}
+
+function init(){
+  resize();
+  ctxT=ct().getContext('2d'); ctxM=cm().getContext('2d'); ctxF=cf().getContext('2d');
+  makeSandNoise(); setupInput(); showIntro(1);
+}
+function resize(){
+  W=wrap.clientWidth; H=wrap.clientHeight;
+  ['layer-turds','layer-mask','layer-fx'].forEach(id=>{const c=document.getElementById(id);c.width=W;c.height=H;});
+}
+function makeSandNoise(){
+  sandNoise=[];
+  const cols=Math.ceil(W/7)+2,rows=Math.ceil(H/7)+2;
+  for(let r=0;r<rows;r++){sandNoise.push([]);for(let c=0;c<cols;c++)sandNoise[r].push(Math.random());}
+}
+function hideAll(){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show'));}
+
+function getStageCfg(lvl){
+  if(lvl<=STAGE_CFGS.length) return STAGE_CFGS[lvl-1];
+  const ex=lvl-STAGE_CFGS.length;
+  return{tc:8,ge:6+ex*2,timed:true,ts:Math.min(330+ex*30,600)};
+}
+function fmtTime(s){return s>=60?`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`:String(s);}
+
+function showIntro(lvl){
+  stopTimer(); gameRunning=false; currentLevel=lvl;
+  stageCfg=getStageCfg(lvl); applyB();
+  totalGroups=stageCfg.tc*stageCfg.ge;
+  const total=stageCfg.tc*stageCfg.ge*3;
+  document.getElementById('i-title').textContent=`第${lvl}关`;
+  document.getElementById('i-badge').textContent=stageCfg.timed?`限时 ${fmtTime(stageCfg.ts+B.bt)}`:'新手关 · 无时限';
+  const rules=[];
+  rules.push(`• ${stageCfg.tc}种猫屎，每种 ${stageCfg.ge*3} 坨（${stageCfg.ge}组）`);
+  rules.push(`• 共 ${total} 坨，全部消除通关`);
+  if(stageCfg.timed) rules.push(`• 限时 ${fmtTime(stageCfg.ts+B.bt)}`);
+  rules.push('• 铲一铲翻出猫屎，凑3个消除！');
+  document.getElementById('i-rules').innerHTML=rules.map(r=>`<p>${r}</p>`).join('');
+  const ck=Object.keys(ownedCats);
+  const cbox=document.getElementById('i-cats');
+  if(ck.length){cbox.style.display='block';document.getElementById('i-cats-list').innerHTML=ck.map(id=>`<div class="cat-chip">${CATS[+id].emoji}${'⭐'.repeat(ownedCats[id])} ${CATS[+id].name}</div>`).join('');}
+  else cbox.style.display='none';
+  hideAll(); document.getElementById('s-intro').classList.add('show');
 }
 
-// ── TURD CREATION ─────────────────────────────────────────────────────────────
-function makeTurds() {
-  turds = [];
-  const playW = W;
-  const playH = H - TRAY_H - TOPBAR_H;
-  const margin = 40;
-
-  // simple grid scatter to avoid overlap
-  for (let i = 0; i < N_TURDS; i++) {
-    let placed = false, tries = 0, x, y, r;
-    r = 18 + Math.random() * 10;
-    while (!placed && tries < 80) {
-      x = margin + Math.random() * (playW - margin*2);
-      y = TOPBAR_H + margin + Math.random() * (playH - margin*2);
-      // check no overlap
-      let ok = true;
-      for (const t of turds) {
-        if (Math.hypot(t.x - x, t.y - y) < t.r + r + 8) { ok=false; break; }
-      }
-      if (ok) placed = true;
-      tries++;
-    }
-    turds.push({
-      typeId: i % TYPES.length,
-      x, y, r,
-      angle: Math.random() * Math.PI * 2,
-      depth: 1.0,        // 1 = fully buried, 0 = fully revealed
-      targetDepth: 1.0,
-      collected: false,
-    });
-  }
-  // shuffle typeIds for variety
-  for (let i = turds.length-1; i>0; i--) {
-    const j = Math.floor(Math.random()*(i+1));
-    [turds[i].typeId, turds[j].typeId] = [turds[j].typeId, turds[i].typeId];
-  }
+function startLevel(){
+  hideAll(); gameRunning=true;
+  slots=[]; score=0; eliminated=0; particles=[]; applyB();
+  document.getElementById('level-num').textContent=currentLevel;
+  document.getElementById('score-num').textContent='0';
+  const timed=stageCfg.timed;
+  document.getElementById('score-label').style.display=timed?'none':'block';
+  document.getElementById('score-num').style.display=timed?'none':'block';
+  document.getElementById('timer-label').style.display=timed?'block':'none';
+  document.getElementById('timer-num').style.display=timed?'block':'none';
+  if(timed){timeLeft=stageCfg.ts+B.bt;updateTimerUI();startTimer();}
+  totalGroups=stageCfg.tc*stageCfg.ge;
+  updateProgress(); makeTurds(); makeSandNoise(); renderSlots();
+  if(frameId) cancelAnimationFrame(frameId);
+  loop();
 }
+function goNextLevel(){showIntro(currentLevel+1);}
 
-// ── SAND NOISE MAP ────────────────────────────────────────────────────────────
-function makeSandNoise() {
-  sandNoise = [];
-  const cols = Math.ceil(W / 8) + 2;
-  const rows = Math.ceil(H / 8) + 2;
-  for (let r = 0; r < rows; r++) {
-    sandNoise.push([]);
-    for (let c = 0; c < cols; c++) {
-      sandNoise[r].push(Math.random());
-    }
-  }
-}
-
-// ── DRAW: SAND LAYER ──────────────────────────────────────────────────────────
-// drawn once, redrawn on sift
-function drawSand(shake = 0) {
-  const ctx = ctxSand;
-  ctx.clearRect(0, 0, W, H);
-
-  // base color
-  const g = ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,   '#d4aa60');
-  g.addColorStop(0.5, '#c09040');
-  g.addColorStop(1,   '#a07030');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, H);
-
-  // grain dots
-  const cellW = 8, cellH = 8;
-  for (let r = 0; r < sandNoise.length; r++) {
-    for (let c = 0; c < sandNoise[r].length; c++) {
-      const v = sandNoise[r][c];
-      const dx = shake * (Math.random()-.5) * 4;
-      const dy = shake * (Math.random()-.5) * 4;
-      const px = c * cellW + dx;
-      const py = r * cellH + dy;
-      if (v > 0.6) {
-        ctx.fillStyle = `rgba(255,220,120,${(v-0.6)*1.8})`;
-        ctx.fillRect(px, py, 2, 2);
-      } else if (v < 0.25) {
-        ctx.fillStyle = `rgba(80,45,10,${(0.25-v)*2})`;
-        ctx.fillRect(px, py, 2, 2);
-      }
-    }
-  }
-
-  // subtle ripple lines (like raked sand)
-  ctx.save();
-  ctx.globalAlpha = 0.06;
-  ctx.strokeStyle = '#7a5010';
-  ctx.lineWidth = 1;
-  for (let y = 0; y < H; y += 14) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    for (let x = 0; x < W; x += 20) {
-      ctx.lineTo(x + 10, y + 3 + Math.sin(x*0.05)*2);
-      ctx.lineTo(x + 20, y);
-    }
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
-// ── DRAW: TURDS LAYER ─────────────────────────────────────────────────────────
-function drawTurds() {
-  const ctx = ctxTurds;
-  ctx.clearRect(0, 0, W, H);
-
-  for (const t of turds) {
-    if (t.collected) continue;
-    drawOneTurd(ctx, t);
-  }
-}
-
-function drawOneTurd(ctx, t) {
-  const { x, y, r, angle, typeId } = t;
-  const type = TYPES[typeId];
-
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angle);
-
-  // drop shadow
-  ctx.shadowColor = 'rgba(0,0,0,0.6)';
-  ctx.shadowBlur  = 10;
-  ctx.shadowOffsetY = 4;
-
-  // body gradient
-  const gr = ctx.createRadialGradient(-r*.3,-r*.35,r*.05, 0,0,r*1.1);
-  gr.addColorStop(0,   lighten(type.color, 50));
-  gr.addColorStop(0.5, type.color);
-  gr.addColorStop(1,   type.dark);
-  ctx.fillStyle = gr;
-
-  ctx.beginPath();
-  drawShape(ctx, typeId, r);
-  ctx.fill();
-
-  ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-
-  // shine
-  ctx.beginPath();
-  ctx.ellipse(-r*.22, -r*.28, r*.24, r*.16, -.5, 0, Math.PI*2);
-  ctx.fillStyle = 'rgba(255,255,255,.32)';
-  ctx.fill();
-
-  // emoji
-  ctx.font = `${r * 1.05}px serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.globalAlpha = 0.85;
-  ctx.shadowBlur = 0;
-  ctx.fillText(type.emoji, 0, 1);
-
-  ctx.restore();
-}
-
-function drawShape(ctx, typeId, r) {
-  switch(typeId) {
-    case 0: // poop swirl
-      ctx.moveTo(0, r);
-      ctx.bezierCurveTo(r*1.1,r*0.8, r*1.1,-r*0.2, r*0.4,-r*0.3);
-      ctx.bezierCurveTo(r*0.9,-r*0.7, r*0.4,-r*1.1, 0,-r);
-      ctx.bezierCurveTo(-r*0.4,-r*1.1, -r*0.9,-r*0.7, -r*0.4,-r*0.3);
-      ctx.bezierCurveTo(-r*1.1,-r*0.2, -r*1.1,r*0.8, 0,r);
-      break;
-    case 1: // round
-      ctx.arc(0, 0, r, 0, Math.PI*2);
-      break;
-    case 2: // bean
-      ctx.ellipse(0, 0, r*0.72, r, 0.3, 0, Math.PI*2);
-      break;
-    case 3: // nugget
-      for(let i=0;i<8;i++){
-        const a=(i/8)*Math.PI*2-Math.PI/2;
-        const ir=r*(.68+Math.sin(i*2.1)*.22);
-        i===0?ctx.moveTo(Math.cos(a)*ir,Math.sin(a)*ir):ctx.lineTo(Math.cos(a)*ir,Math.sin(a)*ir);
-      }
-      ctx.closePath();
-      break;
-    case 4: // star
-      for(let i=0;i<5;i++){
-        const a=(i/5)*Math.PI*2-Math.PI/2, ia=a+Math.PI/5;
-        i===0?ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r):ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);
-        ctx.lineTo(Math.cos(ia)*r*.42,Math.sin(ia)*r*.42);
-      }
-      ctx.closePath();
-      break;
-  }
-}
-
-// ── DRAW: MASK LAYER ──────────────────────────────────────────────────────────
-// The mask is a full-screen sand-colored fill.
-// We "punch holes" where turds are revealed, using destination-out.
-function drawMask(shake = 0) {
-  const ctx = ctxMask;
-  ctx.clearRect(0, 0, W, H);
-
-  // full sand overlay
-  const g = ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,   '#d4aa60');
-  g.addColorStop(0.5, '#c09040');
-  g.addColorStop(1,   '#a07030');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, H);
-
-  // grain on mask too (for texture consistency)
-  ctx.save();
-  ctx.globalAlpha = 0.18;
-  for (let r = 0; r < sandNoise.length; r++) {
-    for (let c = 0; c < sandNoise[r].length; c++) {
-      const v = sandNoise[r][c];
-      const dx = shake * (Math.random()-.5)*6;
-      const dy = shake * (Math.random()-.5)*6;
-      if (v > 0.62) {
-        ctx.fillStyle = 'rgba(255,220,120,1)';
-        ctx.fillRect(c*8+dx, r*8+dy, 2, 2);
-      } else if (v < 0.22) {
-        ctx.fillStyle = 'rgba(60,30,5,1)';
-        ctx.fillRect(c*8+dx, r*8+dy, 2, 2);
-      }
-    }
-  }
-  ctx.restore();
-
-  // punch holes for revealed turds
-  ctx.globalCompositeOperation = 'destination-out';
-  for (const t of turds) {
-    if (t.collected || t.depth >= 1.0) continue;
-    const revealR = t.r * (1.0 - t.depth) * 1.6;
-    if (revealR < 1) continue;
-
-    // soft-edged hole: radial gradient alpha
-    const holeGrad = ctx.createRadialGradient(t.x, t.y, revealR*0.3, t.x, t.y, revealR);
-    holeGrad.addColorStop(0,   'rgba(0,0,0,1)');
-    holeGrad.addColorStop(0.7, 'rgba(0,0,0,0.85)');
-    holeGrad.addColorStop(1,   'rgba(0,0,0,0)');
-
-    ctx.beginPath();
-    ctx.arc(t.x, t.y, revealR, 0, Math.PI*2);
-    ctx.fillStyle = holeGrad;
-    ctx.fill();
-  }
-  ctx.globalCompositeOperation = 'source-over';
-}
-
-// ── SIFT ACTION ───────────────────────────────────────────────────────────────
-function sift() {
-  if (gameOver) return;
-
-  siftAnim = 1.0;  // triggers shake animation
-  if (navigator.vibrate) navigator.vibrate(40);
-
-  // scatter sand noise for variety
-  for (const row of sandNoise) {
-    for (let i = 0; i < row.length; i++) {
-      if (Math.random() < 0.3) row[i] = Math.random();
-    }
-  }
-
-  // pick buried turds to reveal
-  const buried = turds.filter(t => !t.collected && t.depth > BURY_THRESHOLD);
+function makeTurds(){
+  turds=[];
+  // Build strictly balanced type array: each type exactly ge*3 times
+  const ids=[];
+  for(let t=0;t<stageCfg.tc;t++) for(let g=0;g<stageCfg.ge*3;g++) ids.push(t);
   // shuffle
-  buried.sort(() => Math.random()-.5);
-
-  const toReveal = Math.min(REVEAL_PER_SIFT, buried.length);
-  for (let i = 0; i < toReveal; i++) {
-    // reduce depth gradually — won't fully reveal in one sift
-    buried[i].targetDepth = Math.max(0, buried[i].depth - (0.35 + Math.random()*0.35));
-  }
-
-  // spawn sand dust particles
-  for (let i = 0; i < 25; i++) {
-    particles.push({
-      x: Math.random() * W,
-      y: TOPBAR_H + Math.random() * (H - TOPBAR_H - TRAY_H),
-      vx: (Math.random()-.5) * 5,
-      vy: (Math.random()-.5) * 5,
-      r:  2 + Math.random() * 4,
-      life: 1,
-      color: `hsl(${30+Math.random()*20},${50+Math.random()*20}%,${40+Math.random()*20}%)`,
-    });
-  }
-}
-
-// ── UPDATE ────────────────────────────────────────────────────────────────────
-function update() {
-  frameCount++;
-
-  // animate sift shake
-  if (siftAnim > 0) siftAnim = Math.max(0, siftAnim - 0.07);
-
-  // smooth depth animation
-  for (const t of turds) {
-    if (t.collected) continue;
-    if (t.depth > t.targetDepth) {
-      t.depth = Math.max(t.targetDepth, t.depth - 0.025);
+  for(let i=ids.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[ids[i],ids[j]]=[ids[j],ids[i]];}
+  const pw=W,ph=H-BH-TH,mg=36;
+  for(let i=0;i<ids.length;i++){
+    let x,y,r=17+Math.random()*10,placed=false,tries=0;
+    while(!placed&&tries<150){
+      x=mg+Math.random()*(pw-mg*2); y=TH+mg+Math.random()*(ph-mg*2);
+      let ok=true;
+      for(const t of turds){if(Math.hypot(t.x-x,t.y-y)<t.r+r+8){ok=false;break;}}
+      if(ok)placed=true; tries++;
     }
-  }
-
-  // particles
-  for (let i = particles.length-1; i>=0; i--) {
-    const p = particles[i];
-    p.x += p.vx; p.y += p.vy;
-    p.vx *= 0.88; p.vy *= 0.88;
-    p.life -= 0.035;
-    if (p.life <= 0) particles.splice(i, 1);
+    // small chance of special turd from buff
+    let tid=ids[i];
+    if(B.ss.length>0&&Math.random()<0.04) tid=B.ss[Math.floor(Math.random()*B.ss.length)];
+    turds.push({typeId:tid,x,y,r,angle:Math.random()*Math.PI*2,depth:1.0,targetDepth:1.0,collected:false});
   }
 }
 
-// ── RENDER ────────────────────────────────────────────────────────────────────
-function render() {
-  const shake = siftAnim * 5;
-
-  // 1. sand base (only redraw when sifting for perf)
-  if (siftAnim > 0.05 || frameCount < 3) {
-    drawSand(siftAnim);
-  }
-
-  // 2. turds (always, for depth animation)
-  drawTurds();
-
-  // 3. mask with holes
-  drawMask(siftAnim);
-
-  // 4. fx: particles + shake offset
-  ctxFx.clearRect(0, 0, W, H);
-  if (siftAnim > 0.05) {
-    // screen shake: draw a dark flash overlay
-    ctxFx.fillStyle = `rgba(0,0,0,${siftAnim * 0.08})`;
-    ctxFx.fillRect(0, 0, W, H);
-  }
-  for (const p of particles) {
-    ctxFx.globalAlpha = p.life;
-    ctxFx.beginPath();
-    ctxFx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-    ctxFx.fillStyle = p.color;
-    ctxFx.fill();
-  }
-  ctxFx.globalAlpha = 1;
+function sift(){
+  if(!gameRunning) return;
+  siftShake=1.0; rimFlash();
+  if(navigator.vibrate) navigator.vibrate(35);
+  for(const row of sandNoise) for(let i=0;i<row.length;i++) if(Math.random()<.28) row[i]=Math.random();
+  const rc=2+B.er;
+  const buried=turds.filter(t=>!t.collected&&t.depth>0.55);
+  buried.sort(()=>Math.random()-.5);
+  for(let i=0;i<Math.min(rc,buried.length);i++) buried[i].targetDepth=Math.max(0,buried[i].depth-(0.28+Math.random()*0.45));
+  for(let i=0;i<30;i++) particles.push({x:Math.random()*W,y:TH+20+Math.random()*(H-TH-BH-40),vx:(Math.random()-.5)*7,vy:(Math.random()-.5)*7,r:2+Math.random()*4,life:1,color:`hsl(${28+Math.random()*18},50%,${35+Math.random()*15}%)`});
 }
 
-// ── MAIN LOOP ─────────────────────────────────────────────────────────────────
-function loop() {
-  requestAnimationFrame(loop);
-  update();
-  render();
-}
-
-// ── COLLECT ───────────────────────────────────────────────────────────────────
-function tryCollect(px, py) {
-  if (gameOver) return;
-
-  let best = null, bestD = Infinity;
-  for (const t of turds) {
-    if (t.collected) continue;
-    if (t.depth > BURY_THRESHOLD) continue; // still too buried
-
-    const d = Math.hypot(t.x - px, t.y - py);
-    if (d < t.r * 2.2 && d < bestD) { best = t; bestD = d; }
+function tryCollect(px,py){
+  if(!gameRunning||py<TH||py>H-BH) return;
+  let best=null,bd=Infinity;
+  for(const t of turds){
+    if(t.collected||t.depth>0.72) continue;
+    const d=Math.hypot(t.x-px,t.y-py);
+    if(d<t.r*2.5&&d<bd){best=t;bd=d;}
   }
-  if (!best) {
-    // show hint if tapped buried area
-    for (const t of turds) {
-      if (t.collected) continue;
-      const d = Math.hypot(t.x - px, t.y - py);
-      if (d < t.r * 2) { showHint('再铲几次就出来了！'); break; }
-    }
+  if(!best){
+    for(const t of turds) if(!t.collected&&Math.hypot(t.x-px,t.y-py)<t.r*2.2){showToast('再铲几次就出来啦！');return;}
     return;
   }
-
-  best.collected = true;
-  if (slots.length >= MAX_SLOTS) { triggerGameOver(); return; }
-
-  slots.push(best.typeId);
-  spawnFT(best.x, best.y, '+1', '#f5c842', 14);
-  if (navigator.vibrate) navigator.vibrate(15);
-  renderSlots();
-  checkMatch();
+  if(slots.length>=B.ms){triggerGameOver('槽位已满！');return;}
+  best.collected=true; slots.push(best.typeId);
+  spawnFT(best.x,best.y-best.r,'+1');
+  if(navigator.vibrate) navigator.vibrate(12);
+  renderSlots(); checkMatch();
 }
 
-// ── MATCH ─────────────────────────────────────────────────────────────────────
-function checkMatch() {
-  const counts = {};
-  for (const id of slots) counts[id] = (counts[id]||0)+1;
-  for (const [id, n] of Object.entries(counts)) {
-    if (n >= 3) {
-      let rem = 0;
-      slots = slots.filter(s => (s===+id && rem<3) ? (rem++, false) : true);
-      combo++;
-      const pts = 100 * combo;
-      score += pts;
-      scoreEl.textContent = score;
-      comboEl.textContent = combo > 1 ? `×${combo} 连消!` : '';
-      showBurst(TYPES[+id].emoji, pts);
-      spawnParticles(W/2, H - TRAY_H - 30, TYPES[+id].color);
-      flashSlots();
-      if (navigator.vibrate) navigator.vibrate([30,15,60]);
-      renderSlots();
-      setTimeout(checkMatch, 260);
-      return;
+function checkMatch(){
+  const counts={};
+  for(const id of slots) counts[id]=(counts[id]||0)+1;
+  for(const[id,n] of Object.entries(counts)){
+    if(n>=3){
+      let rem=0;
+      slots=slots.filter(s=>(s===+id&&rem<3)?(rem++,false):true);
+      eliminated+=3;
+      const earned=Math.round(TURDS[+id].price*(B.pm[+id]||1))*3;
+      score+=earned;
+      document.getElementById('score-num').textContent=score;
+      showBurst(TURDS[+id].emoji,earned);
+      spawnMP(W/2,H-BH-30,TURDS[+id].color);
+      flashSlots(); if(navigator.vibrate) navigator.vibrate([30,15,60]);
+      updateProgress(); renderSlots();
+      // win check: all turds collected AND slots empty
+      const remaining=turds.filter(t=>!t.collected&&t.typeId<8).length;
+      if(remaining===0&&slots.length===0){setTimeout(doStageClear,400);return;}
+      setTimeout(checkMatch,280); return;
     }
   }
-  if (combo > 0 && slots.length < MAX_SLOTS) { combo=0; comboEl.textContent=''; }
 }
 
-// ── INPUT ─────────────────────────────────────────────────────────────────────
-function getXY(e) {
-  const rect = cMask.getBoundingClientRect();
-  const sx = W / rect.width, sy = H / rect.height;
-  const src = e.touches ? e.touches[0] : e;
-  return { x:(src.clientX-rect.left)*sx, y:(src.clientY-rect.top)*sy };
+function doStageClear(){
+  stopTimer(); gameRunning=false;
+  const final=Math.round(score*B.sm);
+  playerCoins+=final; showSettle(final);
 }
 
-// tap on main canvas = try collect
-cMask && cMask.addEventListener('touchstart', e=>{
-  e.preventDefault();
-  const {x,y} = getXY(e);
-  // ignore tray and topbar
-  if (y < TOPBAR_H || y > H - TRAY_H) return;
-  tryCollect(x, y);
-}, {passive:false});
-
-// device motion (shake = sift)
-if (window.DeviceMotionEvent) {
-  window.addEventListener('devicemotion', e => {
-    const a = e.accelerationIncludingGravity;
-    if (!a) return;
-    const mag = Math.sqrt(a.x**2 + a.y**2 + a.z**2);
-    const now = Date.now();
-    if (mag > 22 && now - lastMotionSift > 800) {
-      lastMotionSift = now;
-      sift();
-    }
+function showSettle(final){
+  hideAll();
+  document.getElementById('st-sub').textContent=`第${currentLevel}关完成！消除了 ${eliminated} 坨猫屎`;
+  const collected={};
+  for(const t of turds) if(t.collected) collected[t.typeId]=(collected[t.typeId]||0)+1;
+  const rowsEl=document.getElementById('st-rows'); rowsEl.innerHTML='';
+  const entries=Object.entries(collected).sort((a,b)=>+a[0]-+b[0]);
+  entries.forEach(([id,count],idx)=>{
+    const type=TURDS[+id],multi=B.pm[+id]||1,sub=Math.round(type.price*multi)*count;
+    const row=document.createElement('div'); row.className='settle-row';
+    row.innerHTML=`<div class="srl"><div class="sre">${type.emoji}</div><div><div class="srn">${type.name}</div><div class="srd">${count}坨 × ${Math.round(type.price*multi)}💰${multi>1?` (×${multi})`:''}</div></div></div><div class="src">+${sub}</div>`;
+    rowsEl.appendChild(row);
+    setTimeout(()=>row.classList.add('show'),(idx+1)*180);
   });
+  const buffEl=document.getElementById('st-buff');
+  if(B.sm>1){buffEl.style.display='block';buffEl.textContent=`👑 金渐层加成 ×${B.sm} → 最终 ${final} 💰`;}
+  else buffEl.style.display='none';
+  const totalEl=document.getElementById('st-total'); totalEl.textContent='0';
+  const delay=entries.length*180+400;
+  setTimeout(()=>{let cur=0;const step=Math.ceil(final/40);const iv=setInterval(()=>{cur=Math.min(cur+step,final);totalEl.textContent=cur;if(cur>=final)clearInterval(iv);},30);},delay);
+  document.getElementById('s-settle').classList.add('show');
 }
 
-// ── UI HELPERS ────────────────────────────────────────────────────────────────
-function renderSlots() {
-  slotsEl.innerHTML = '';
-  for (let i = 0; i < MAX_SLOTS; i++) {
-    const d = document.createElement('div');
-    d.className = 'slot';
-    if (slots[i] !== undefined) {
-      d.textContent = TYPES[slots[i]].emoji;
-      d.classList.add('has-item');
-    }
-    slotsEl.appendChild(d);
+function showGacha(){
+  hideAll(); updateGachaUI();
+  document.getElementById('s-gacha').classList.add('show');
+}
+
+function doGacha(premium){
+  const cost=premium?1000:100;
+  if(playerCoins<cost){showToast('金币不足！');return;}
+  playerCoins-=cost;
+  const anim=document.getElementById('gacha-anim');
+  anim.classList.add('show');
+  document.getElementById('gball').textContent=premium?'🎁':'🥚';
+  setTimeout(()=>{
+    anim.classList.remove('show');
+    const cat=rollCat(premium);
+    ownedCats[cat.id]=ownedCats[cat.id]===undefined?1:Math.min(3,ownedCats[cat.id]+1);
+    showGResult(cat); updateGachaUI();
+  },1200);
+}
+function rollCat(premium){
+  const r=Math.random(),pool=rarity=>{return CATS.filter(c=>c.rarity===rarity);};
+  let p;
+  if(premium){p=r<0.25?pool('super'):r<0.80?pool('rare'):pool('normal');}
+  else{p=r<0.05?pool('super'):r<0.40?pool('rare'):pool('normal');}
+  return p[Math.floor(Math.random()*p.length)];
+}
+function showGResult(cat){
+  const ri=document.getElementById('gr-inner');
+  ri.style.display='block'; ri.style.animation='none'; void ri.offsetWidth; ri.style.animation='resultpop .5s cubic-bezier(.17,.67,.35,1.5)';
+  document.getElementById('gr-emoji').textContent=cat.emoji;
+  document.getElementById('gr-name').textContent=cat.name;
+  const rl=document.getElementById('gr-rarity'); rl.textContent=RL[cat.rarity]; rl.className='gr-rarity '+RC[cat.rarity];
+  document.getElementById('gr-buff').textContent=cat.buff;
+  if(navigator.vibrate) navigator.vibrate([50,30,100]);
+}
+function updateGachaUI(){
+  document.getElementById('gc-num').textContent=playerCoins;
+  const list=document.getElementById('owned-list'); list.innerHTML='';
+  const keys=Object.keys(ownedCats);
+  if(!keys.length){list.innerHTML='<div style="font-size:11px;color:rgba(255,255,255,.28)">还没有猫，快去扭！</div>';return;}
+  for(const[id,stars] of Object.entries(ownedCats)){
+    const cat=CATS[+id],el=document.createElement('div');
+    el.className='ocat'; el.innerHTML=`${cat.emoji} ${cat.name} <span class="st">${'⭐'.repeat(stars)}</span>`;
+    list.appendChild(el);
   }
 }
+function triggerGameOver(reason){
+  stopTimer(); gameRunning=false; hideAll();
+  document.getElementById('s-gameover').classList.add('show');
+  document.getElementById('go-info').textContent=reason||`消除了 ${eliminated} 坨，再接再厉！`;
+}
 
-function flashSlots() {
-  document.querySelectorAll('.slot').forEach(s=>{
-    s.classList.remove('match-flash');
-    void s.offsetWidth;
-    s.classList.add('match-flash');
+function startTimer(){stopTimer();timerInterval=setInterval(()=>{if(!gameRunning)return;timeLeft--;updateTimerUI();if(timeLeft<=0)triggerGameOver('时间到了！');},1000);}
+function stopTimer(){clearInterval(timerInterval);timerInterval=null;}
+function updateTimerUI(){document.getElementById('timer-num').textContent=fmtTime(timeLeft);document.getElementById('timer-num').className=timeLeft<=15?'danger':'';}
+function updateProgress(){
+  const eg=Math.floor(eliminated/3);
+  const pct=Math.floor(eg/totalGroups*100);
+  document.getElementById('progress-text').textContent=`${eg} / ${totalGroups} 组`;
+  document.getElementById('progress-bar-fill').style.width=pct+'%';
+}
+
+function loop(){frameId=requestAnimationFrame(loop);frameCount++;update();drawT();drawM();drawF();}
+function update(){
+  if(siftShake>0) siftShake=Math.max(0,siftShake-.055);
+  for(const t of turds) if(!t.collected&&t.depth>t.targetDepth) t.depth=Math.max(t.targetDepth,t.depth-.022);
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vx*=.88;p.vy*=.88;p.life-=.032;if(p.life<=0)particles.splice(i,1);}
+}
+function drawT(){
+  ctxT.clearRect(0,0,W,H);
+  for(const t of turds) if(!t.collected) drawOneTurd(ctxT,t);
+}
+function drawOneTurd(ctx,t){
+  ctx.save(); ctx.translate(t.x,t.y); ctx.rotate(t.angle);
+  const r=t.r,tp=TURDS[t.typeId];
+  ctx.shadowColor='rgba(0,0,0,.55)'; ctx.shadowBlur=10; ctx.shadowOffsetY=5;
+  const gr=ctx.createRadialGradient(-r*.3,-r*.3,r*.05,0,0,r*1.1);
+  gr.addColorStop(0,ltn(tp.color,55)); gr.addColorStop(.55,tp.color); gr.addColorStop(1,tp.dark);
+  ctx.fillStyle=gr; ctx.beginPath(); drawShp(ctx,t.typeId,r); ctx.fill();
+  ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+  ctx.beginPath(); ctx.ellipse(-r*.22,-r*.3,r*.24,r*.15,-.5,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,.3)'; ctx.fill();
+  ctx.font=`${r}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.globalAlpha=.82; ctx.fillText(tp.emoji,0,1);
+  ctx.restore();
+}
+function drawShp(ctx,tid,r){
+  switch(tid%8){
+    case 0:ctx.moveTo(0,r);ctx.bezierCurveTo(r*1.1,r*.8,r*1.1,-r*.2,r*.4,-r*.3);ctx.bezierCurveTo(r*.9,-r*.7,r*.4,-r*1.1,0,-r);ctx.bezierCurveTo(-r*.4,-r*1.1,-r*.9,-r*.7,-r*.4,-r*.3);ctx.bezierCurveTo(-r*1.1,-r*.2,-r*1.1,r*.8,0,r);break;
+    case 1:ctx.arc(0,0,r,0,Math.PI*2);break;
+    case 2:ctx.ellipse(0,0,r*.72,r,.3,0,Math.PI*2);break;
+    case 3:for(let i=0;i<8;i++){const a=(i/8)*Math.PI*2-Math.PI/2,ir=r*(.68+Math.sin(i*2.1)*.22);i===0?ctx.moveTo(Math.cos(a)*ir,Math.sin(a)*ir):ctx.lineTo(Math.cos(a)*ir,Math.sin(a)*ir);}ctx.closePath();break;
+    case 4:for(let i=0;i<5;i++){const a=(i/5)*Math.PI*2-Math.PI/2,ia=a+Math.PI/5;i===0?ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r):ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);ctx.lineTo(Math.cos(ia)*r*.42,Math.sin(ia)*r*.42);}ctx.closePath();break;
+    case 5:ctx.arc(0,0,r,0,Math.PI*2);break;
+    case 6:ctx.ellipse(0,0,r*.8,r,0,0,Math.PI*2);break;
+    case 7:for(let i=0;i<6;i++){const a=(i/6)*Math.PI*2-Math.PI/2;i===0?ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r):ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);}ctx.closePath();break;
+  }
+}
+function drawM(){
+  ctxM.clearRect(0,0,W,H);
+  const g=ctxM.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#d4a855');g.addColorStop(.5,'#b88838');g.addColorStop(1,'#8a6020');
+  ctxM.fillStyle=g;ctxM.fillRect(0,0,W,H);
+  const sh=siftShake;
+  ctxM.save();ctxM.globalAlpha=.2;
+  for(let r=0;r<sandNoise.length;r++)for(let c=0;c<sandNoise[r].length;c++){
+    const v=sandNoise[r][c],dx=sh*(Math.random()-.5)*9,dy=sh*(Math.random()-.5)*9;
+    if(v>.63){ctxM.fillStyle='rgba(255,215,110,.9)';ctxM.fillRect(c*7+dx,r*7+dy,2,2);}
+    else if(v<.22){ctxM.fillStyle='rgba(60,30,5,.85)';ctxM.fillRect(c*7+dx,r*7+dy,2,2);}
+  }
+  ctxM.restore();
+  ctxM.save();ctxM.globalAlpha=.07;ctxM.strokeStyle='#6a4010';ctxM.lineWidth=1;
+  for(let y=TH+5;y<H-BH;y+=18){ctxM.beginPath();ctxM.moveTo(0,y);for(let x=0;x<W;x+=24){ctxM.lineTo(x+12,y+4+Math.sin(x*.06+frameCount*.01)*3);ctxM.lineTo(x+24,y);}ctxM.stroke();}
+  ctxM.restore();
+  ctxM.globalCompositeOperation='destination-out';
+  for(const t of turds){
+    if(t.collected||t.depth>=1.0)continue;
+    const ex=1.0-t.depth;if(ex<0.02)continue;
+    const hr=t.r*ex*1.75;
+    const hg=ctxM.createRadialGradient(t.x,t.y,hr*.2,t.x,t.y,hr);
+    hg.addColorStop(0,'rgba(0,0,0,1)');hg.addColorStop(.6,'rgba(0,0,0,.92)');hg.addColorStop(1,'rgba(0,0,0,0)');
+    ctxM.beginPath();ctxM.arc(t.x,t.y,hr,0,Math.PI*2);ctxM.fillStyle=hg;ctxM.fill();
+  }
+  ctxM.globalCompositeOperation='source-over';
+  ctxM.clearRect(0,0,W,TH);ctxM.clearRect(0,H-BH,W,BH);
+}
+function drawF(){
+  ctxF.clearRect(0,0,W,H);
+  if(siftShake>.05){ctxF.fillStyle=`rgba(200,160,60,${siftShake*.13})`;ctxF.fillRect(0,0,W,H);}
+  for(const p of particles){ctxF.globalAlpha=p.life;ctxF.beginPath();ctxF.arc(p.x,p.y,p.r,0,Math.PI*2);ctxF.fillStyle=p.color;ctxF.fill();}
+  ctxF.globalAlpha=1;
+}
+
+function renderSlots(){
+  const sl=document.getElementById('slots');sl.innerHTML='';
+  for(let i=0;i<B.ms;i++){const d=document.createElement('div');d.className='slot';if(slots[i]!==undefined){d.textContent=TURDS[slots[i]].emoji;d.classList.add('pop');}sl.appendChild(d);}
+}
+function flashSlots(){document.querySelectorAll('.slot').forEach(s=>{s.classList.remove('flash');void s.offsetWidth;s.classList.add('flash');});}
+function showBurst(e,p){const b=document.getElementById('burst');b.style.display='block';b.style.animation='none';b.textContent=`${e}×3  +${p}💰`;void b.offsetWidth;b.style.animation='burstpop .75s ease forwards';setTimeout(()=>b.style.display='none',850);}
+function spawnFT(x,y,t){const el=document.createElement('div');el.className='ft';el.style.cssText=`left:${x}px;top:${y}px;color:#f5c842;`;el.textContent=t;wrap.appendChild(el);setTimeout(()=>el.remove(),800);}
+function spawnMP(x,y,color){for(let i=0;i<22;i++)particles.push({x,y,vx:(Math.random()-.5)*10,vy:-(2+Math.random()*8),r:3+Math.random()*5,life:1,color});}
+function rimFlash(){const r=document.getElementById('rim');r.style.animation='none';void r.offsetWidth;r.style.animation='rimflash .4s ease forwards';}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(showToast._t);showToast._t=setTimeout(()=>t.classList.remove('show'),1800);}
+function ltn(h,a){return `rgb(${Math.min(255,parseInt(h.slice(1,3),16)+a)},${Math.min(255,parseInt(h.slice(3,5),16)+a)},${Math.min(255,parseInt(h.slice(5,7),16)+a)})`;}
+
+function setupInput(){
+  const sb=document.getElementById('sift-btn');
+  sb.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();sift();},{passive:false});
+  sb.addEventListener('click',e=>{e.stopPropagation();sift();});
+  function gxy(e){const r=cm().getBoundingClientRect(),sx=W/r.width,sy=H/r.height,s=e.touches?e.touches[0]:e;return{x:(s.clientX-r.left)*sx,y:(s.clientY-r.top)*sy};}
+  function onTap(e){e.preventDefault();const{x,y}=gxy(e);tryCollect(x,y);}
+  cm().addEventListener('touchstart',onTap,{passive:false});
+  cm().addEventListener('mousedown',onTap);
+  if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
+    sb.addEventListener('touchend',async()=>{if(!motionEnabled){try{const r=await DeviceMotionEvent.requestPermission();if(r==='granted')enableMotion();}catch(e){}}});
+  } else enableMotion();
+}
+function enableMotion(){
+  motionEnabled=true;
+  window.addEventListener('devicemotion',e=>{
+    const a=e.accelerationIncludingGravity;if(!a)return;
+    const mag=Math.sqrt((a.x||0)**2+(a.y||0)**2+(a.z||0)**2),now=Date.now();
+    if(mag>20&&now-lastMotionT>700){lastMotionT=now;sift();}
   });
 }
-
-function showBurst(emoji, pts) {
-  burstEl.style.cssText = `display:block; left:50%; top:45%; animation:none; transform:translate(-50%,-50%)`;
-  burstEl.textContent = `${emoji}×3  +${pts}`;
-  void burstEl.offsetWidth;
-  burstEl.style.animation = 'burstpop .75s ease forwards';
-  setTimeout(()=> burstEl.style.display='none', 850);
-}
-
-function spawnFT(x, y, txt, color, size) {
-  const el = document.createElement('div');
-  el.className = 'ft';
-  el.style.cssText = `left:${x}px;top:${y}px;color:${color};font-size:${size}px;transform:translateX(-50%)`;
-  el.textContent = txt;
-  wrap.appendChild(el);
-  setTimeout(()=>el.remove(), 800);
-}
-
-function spawnParticles(x, y, color) {
-  for (let i=0;i<20;i++) particles.push({
-    x, y,
-    vx:(Math.random()-.5)*9,
-    vy:-(2+Math.random()*7),
-    r:3+Math.random()*4,
-    life:1, color,
-  });
-}
-
-function showHint(msg) {
-  hintEl.textContent = msg;
-  hintEl.classList.add('show');
-  clearTimeout(showHint._t);
-  showHint._t = setTimeout(()=>hintEl.classList.remove('show'), 1800);
-}
-
-function triggerGameOver() {
-  gameOver = true;
-  document.getElementById('gameover').classList.add('show');
-  document.getElementById('go-score').textContent = `最终得分: ${score}`;
-}
-
-function lighten(h, a) {
-  return `rgb(${Math.min(255,parseInt(h.slice(1,3),16)+a)},${Math.min(255,parseInt(h.slice(3,5),16)+a)},${Math.min(255,parseInt(h.slice(5,7),16)+a)})`;
-}
-
-// ── INIT ──────────────────────────────────────────────────────────────────────
-function initGame() {
-  document.getElementById('gameover').classList.remove('show');
-  gameOver=false; slots=[]; score=0; combo=0; particles=[];
-  scoreEl.textContent='0'; comboEl.textContent='';
-  siftAnim=0;
-
-  resize();
-  getCtxs();
-  makeSandNoise();
-  makeTurds();
-  renderSlots();
-
-  // Add input listener now that canvas exists
-  document.getElementById('layer-mask').addEventListener('touchstart', e=>{
-    e.preventDefault();
-    const {x,y} = getXY(e);
-    if (y < TOPBAR_H || y > H - TRAY_H) return;
-    tryCollect(x, y);
-  }, {passive:false});
-
-  document.getElementById('layer-mask').addEventListener('mousedown', e=>{
-    const {x,y} = getXY(e);
-    if (y < TOPBAR_H || y > H - TRAY_H) return;
-    tryCollect(x, y);
-  });
-}
-
-window.addEventListener('resize', ()=>{ resize(); getCtxs(); makeSandNoise(); });
-
-initGame();
-loop();
+window.addEventListener('resize',()=>{resize();ctxT=ct().getContext('2d');ctxM=cm().getContext('2d');ctxF=cf().getContext('2d');makeSandNoise();});
+init();
 </script>
 </body>
 </html>
